@@ -1,6 +1,6 @@
 #include "yuemu.hpp"
 
 int main() {
-    Yuemu yuemu("../yuasm/output.yubin");
+    Yuemu yuemu("../yuasm/program.yubin");
     return 0;
 }
