@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <string>
 #include <map>
+#include <stack>
 
 class Yuemu {
     public:
@@ -13,6 +14,7 @@ class Yuemu {
         unsigned int pc = 0;
         uint32_t regs[256];
         std::map<uint32_t, uint32_t> mem;
+        std::stack<uint32_t> ret_stack;
 
         bool skip_auto_pc_incr = false;
 
