@@ -12,7 +12,7 @@ class Yuemu {
 
         unsigned int read_instr_count = 0;
         unsigned int pc = 0;
-        uint32_t regs[256];
+        uint32_t regs[256] = {0};
         std::map<uint32_t, uint32_t> mem;
         std::stack<uint32_t> ret_stack;
 

@@ -269,17 +269,27 @@ void Yuemu::run() {
                     }
 
                     case 0x5: { // end
-                        std::cout << "End of execution\n";
+                        std::cout << "End of program\n";
+
+                        if (DEBUG_LEVEL >= 10) {
+                            std::cout << "\nMemory map after 0x0100\n----------------\n";
+                            for (auto it=mem.begin(); it!=mem.end(); ++it) {
+                                if (it->first >= 0x100) {
+                                    std::cout << "Address: " << it->first << ", Value: " << to_signed(it->second) << "\n";
+                                }
+                            }
+                        }
+
                         return;
                         // break; // not necessary
                     }
 
-                    case 0x6: { // branch unconditionally immediate // TODO not tested
+                    case 0x6: { // branch unconditionally immediate
                         int32_t val = instr & 0xFFFFFF; // 24 bits address offset
 
                         // sign extend
-                        if ((val >> 15 & 0b1) == 1) { // if negative
-                            val = sign_extend(val, 16);
+                        if ((val >> 23 & 0b1) == 1) { // if negative
+                            val = sign_extend(val, 24);
                         }
 
                         ret_stack.push(pc + 4);
@@ -651,7 +661,13 @@ std::string Yuemu::get_instr_as_hex(uint32_t instr_int) {
 uint32_t Yuemu::sign_extend(uint32_t val, uint32_t no_of_bits) {
     uint32_t sign_bit = val >> (no_of_bits - 1) & 0b1;
     if (sign_bit == 1) {
-        val += 0xFFFF0000;
+        if (no_of_bits == 16) {
+            val += 0xFFFF0000;
+        } else if (no_of_bits == 24) {
+            val += 0xFF000000;
+        } else {
+            std::cout << "TODO implement sign extension for all bit lengths\n";
+        }
     }
     // no need to sign extend positive values
     return val; 
