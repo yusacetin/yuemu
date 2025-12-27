@@ -1,9 +1,8 @@
+#include "yuemu.h"
 #include <cstdint>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-
-#include "yuemu.hpp"
 
 Yuemu::Yuemu(std::string fpath) {
     read_file_to_memory(fpath);
@@ -82,6 +81,18 @@ void Yuemu::run() {
                         if (DEBUG_LEVEL >= 10) {
                             std::cout << "loadd: rd=" << rd << ", raddr=" << addr << "\n";
                             std::cout << "+> value_at_addr=" << mem[addr] << "\n";
+                        }
+                        break;
+                    }
+
+                    case 0x5: { // unsigned load immediate
+                        uint32_t rd = instr >> 16 & 0xFF; // 8 bits
+                        uint32_t val = instr & 0xFFFF; // 16 bits
+
+                        regs[rd] = val;
+
+                        if (DEBUG_LEVEL >= 10) {
+                            std::cout << "uloadm: rd=" << rd << ", val=" << val << "\n";
                         }
                         break;
                     }
@@ -272,10 +283,14 @@ void Yuemu::run() {
                         std::cout << "End of program\n";
 
                         if (DEBUG_LEVEL >= 10) {
-                            std::cout << "\nMemory map after 0x0100\n----------------\n";
+                            std::cout << "\nMemory map after 0x00000100\n----------------\n";
                             for (auto it=mem.begin(); it!=mem.end(); ++it) {
                                 if (it->first >= 0x100) {
-                                    std::cout << "Address: " << it->first << ", Value: " << to_signed(it->second) << "\n";
+                                    std::stringstream ssaddr;
+                                    ssaddr << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << it->first;
+                                    std::stringstream ssval;
+                                    ssval << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << it->second;
+                                    std::cout << "Address: 0x" << ssaddr.str() << ", Raw Value: 0x" << ssval.str() << ", Value: " << to_signed(it->second) << "\n";
                                 }
                             }
                         }
@@ -596,10 +611,14 @@ void Yuemu::run() {
     std::cout << "Finished running program\n";
 
     if (DEBUG_LEVEL >= 10) {
-        std::cout << "\nMemory map after 0x0100\n----------------\n";
+        std::cout << "\nMemory map after 0x00000100\n----------------\n";
         for (auto it=mem.begin(); it!=mem.end(); ++it) {
             if (it->first >= 0x100) {
-                std::cout << "Address: " << it->first << ", Value: " << to_signed(it->second) << "\n";
+                std::stringstream ssaddr;
+                ssaddr << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << it->first;
+                std::stringstream ssval;
+                ssval << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << it->second;
+                std::cout << "Address: 0x" << ssaddr.str() << ", Raw Value: 0x" << ssval.str() << ", Value: " << to_signed(it->second) << "\n";
             }
         }
     }
