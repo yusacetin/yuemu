@@ -15,15 +15,15 @@ void Yuemu::run() {
     std::cout << "Running program\n";
     while (pc != read_instr_count) {
         uint32_t instr = mem[pc]; // fetch
-        uint32_t opcode_category = instr >> 28 & 0xF;
-        uint32_t opcode_id = instr >> 24 & 0xF;
+        uint32_t opcode_category = (instr >> 28) & 0xF;
+        uint32_t opcode_id = (instr >> 24) & 0xF;
 
         switch (opcode_category) {
             case 0x0: { // memory
                 switch (opcode_id) {
                     case 0x0: { // unsigned load immediate
-                        uint32_t rd = instr >> 16 & 0xFF; // 8 bits
-                        uint32_t val = instr & 0xFFFF; // 16 bits
+                        uint32_t rd = (instr >> 20) & 0xF; // 4 bits
+                        uint32_t val = instr & 0xFFFFF; // 20 bits
 
                         regs[rd] = val;
 
@@ -34,12 +34,12 @@ void Yuemu::run() {
                     }
                     
                     case 0x1: { // load immediate
-                        uint32_t rd = instr >> 16 & 0xFF; // 8 bits
-                        uint32_t val = instr & 0xFFFF; // 16 bits
+                        uint32_t rd = (instr >> 20) & 0xF; // 4 bits
+                        uint32_t val = instr & 0xFFFFF; // 20 bits
 
                         // sign extend
-                        if ((val >> 15 & 0b1) == 1) { // if negative
-                            val = sign_extend(val, 16);
+                        if (((val >> 19) & 0b1) == 1) { // if negative
+                            val = sign_extend(val, 20);
                         }
 
                         regs[rd] = val;
@@ -51,8 +51,8 @@ void Yuemu::run() {
                     }
 
                     case 0x2: { // load register indirect
-                        uint32_t rd = instr >> 16 & 0xFF; // 8 bits
-                        uint32_t raddr = instr >> 8 & 0xFF; // 8 bits
+                        uint32_t rd = (instr >> 20) & 0xF; // 4 bits
+                        uint32_t raddr = (instr >> 16) & 0xF; // 4 bits
                         regs[rd] = mem[regs[raddr]];
 
                         if (DEBUG_LEVEL >= 10) {
@@ -63,8 +63,8 @@ void Yuemu::run() {
                     }
 
                     case 0x3: { // storen
-                        uint32_t raddr = instr >> 16 & 0xFF; // 8 bits
-                        uint32_t rs = instr >> 8 & 0xFF; // 8 bits
+                        uint32_t raddr = (instr >> 20) & 0xF; // 4 bits
+                        uint32_t rs = (instr >> 16) & 0xF; // 4 bits
                         mem[regs[raddr]] = regs[rs];
 
                         if (DEBUG_LEVEL >= 10) {
@@ -74,9 +74,9 @@ void Yuemu::run() {
                         break;
                     }
 
-                    case 0x4: { // stored 0000_0011_16-bits-addr_8-bits-rs
-                        uint32_t addr = instr >> 8 & 0xFFFF; // 16 bits
-                        uint32_t rs = instr & 0xFF; // 8 bits
+                    case 0x4: { // stored
+                        uint32_t addr = (instr >> 4) & 0xFFFFF; // 20 bits
+                        uint32_t rs = instr & 0xF; // 4 bits
                         mem[addr] = regs[rs];
 
                         if (DEBUG_LEVEL >= 10) {
@@ -86,9 +86,9 @@ void Yuemu::run() {
                         break;
                     }
 
-                    case 0x5: { // load direct 0000_0100_8-bits-rd_16-bits-addr
-                        uint32_t rd = instr >> 16 & 0xFF; // 8 bits
-                        uint32_t addr = instr & 0xFFFF; // 16 bits
+                    case 0x5: { // load direct
+                        uint32_t rd = (instr >> 20) & 0xF; // 4 bits
+                        uint32_t addr = instr & 0xFFFFF; // 20 bits
                         regs[rd] = mem[addr];
 
                         if (DEBUG_LEVEL >= 10) {
@@ -109,9 +109,9 @@ void Yuemu::run() {
             case 0x1: { // arithmetic
                 switch (opcode_id) {
                     case 0x0: { // add
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         uint32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
@@ -126,9 +126,9 @@ void Yuemu::run() {
                     }
 
                     case 0x1: { // subtract
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         int32_t val1 = regs[rs1];
                         int32_t val2 = regs[rs2];
@@ -143,9 +143,9 @@ void Yuemu::run() {
                     }
 
                     case 0x2: { // mul
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         uint32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
@@ -160,9 +160,9 @@ void Yuemu::run() {
                     }
 
                     case 0x3: { // div
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         uint32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
@@ -191,8 +191,8 @@ void Yuemu::run() {
                         int32_t val = instr & 0xFFFFFF; // 24 bits address offset
 
                         // sign extend
-                        if ((val >> 15 & 0b1) == 1) { // if negative
-                            val = sign_extend(val, 16);
+                        if (((val >> 23) & 0b1) == 1) { // if negative
+                            val = sign_extend(val, 24);
                         }
 
                         pc += val;
@@ -205,7 +205,7 @@ void Yuemu::run() {
                     }
 
                     case 0x1: { // jump unconditionally direct // TODO not tested
-                        uint32_t rs = instr >> 16 & 0xFF;
+                        uint32_t rs = (instr >> 20) & 0xF;
 
                         pc += (int32_t) regs[rs];
                         skip_auto_pc_incr = true;
@@ -217,13 +217,13 @@ void Yuemu::run() {
                         break;
                     }
 
-                    case 0x2: { // jump if immediate 0010_0010_16-bits-val_8-bits-rcond
-                        int32_t val = instr >> 8 & 0xFFFF;
-                        uint32_t rcond = instr & 0xFF;
+                    case 0x2: { // jump if immediate
+                        int32_t val = (instr >> 4) & 0xFFFFF;
+                        uint32_t rcond = instr & 0xF;
 
                         // sign extend
-                        if ((val >> 15 & 0b1) == 1) { // if negative
-                            val = sign_extend(val, 16);
+                        if (((val >> 19) & 0b1) == 1) { // if negative
+                            val = sign_extend(val, 20);
                         }
 
                         int32_t cond = regs[rcond];
@@ -241,9 +241,9 @@ void Yuemu::run() {
                         break;
                     }
 
-                    case 0x3: { // jump if direct 0010_0011_8-bits-rs_8-bits-skip_8-bits-rcond // TODO not tested
-                        uint32_t rs = instr >> 16 & 0xFF;
-                        uint32_t rcond = instr & 0xFF;
+                    case 0x3: { // jump if direct // TODO not tested
+                        uint32_t rs = (instr >> 20) & 0xF;
+                        uint32_t rcond = instr & 0xF;
 
                         int32_t cond = regs[rcond];
                         bool cond_bool = (cond != 0) ? true : false;
@@ -304,7 +304,7 @@ void Yuemu::run() {
                         int32_t val = instr & 0xFFFFFF; // 24 bits address offset
 
                         // sign extend
-                        if ((val >> 23 & 0b1) == 1) { // if negative
+                        if (((val >> 23) & 0b1) == 1) { // if negative
                             val = sign_extend(val, 24);
                         }
 
@@ -319,12 +319,12 @@ void Yuemu::run() {
                     }
 
                     case 0x7: { // branch if immediate
-                        int32_t val = instr >> 8 & 0xFFFF;
-                        uint32_t rcond = instr & 0xFF;
+                        int32_t val = (instr >> 4) & 0xFFFFF;
+                        uint32_t rcond = instr & 0xF;
 
                         // sign extend
-                        if ((val >> 15 & 0b1) == 1) { // if negative
-                            val = sign_extend(val, 16);
+                        if (((val >> 19) & 0b1) == 1) { // if negative
+                            val = sign_extend(val, 20);
                         }
 
                         int32_t cond = regs[rcond];
@@ -354,9 +354,9 @@ void Yuemu::run() {
             case 0x3: { // logical
                 switch (opcode_id) {
                     case 0x0: { // and
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         uint32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
@@ -371,9 +371,9 @@ void Yuemu::run() {
                     }
 
                     case 0x1: { // or
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         uint32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
@@ -388,9 +388,9 @@ void Yuemu::run() {
                     }
 
                     case 0x2: { // nand
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         uint32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
@@ -405,9 +405,9 @@ void Yuemu::run() {
                     }
 
                     case 0x3: { // nor
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         uint32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
@@ -422,9 +422,9 @@ void Yuemu::run() {
                     }
 
                     case 0x4: { // xor
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         uint32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
@@ -449,9 +449,9 @@ void Yuemu::run() {
             case 0x4: { // shift
                 switch (opcode_id) {
                     case 0x0: { // lshift
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         uint32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
@@ -466,9 +466,9 @@ void Yuemu::run() {
                     }
 
                     case 0x1: { // rshift
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         uint32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
@@ -488,9 +488,9 @@ void Yuemu::run() {
             case 0x5: { // comparison
                 switch (opcode_id) {
                     case 0x0: { // less than
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         int32_t val1 = regs[rs1];
                         int32_t val2 = regs[rs2];
@@ -506,9 +506,9 @@ void Yuemu::run() {
                     }
 
                     case 0x1: { // less than or equal to
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         int32_t val1 = regs[rs1];
                         int32_t val2 = regs[rs2];
@@ -524,9 +524,9 @@ void Yuemu::run() {
                     }
 
                     case 0x2: { // greater than
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         int32_t val1 = regs[rs1];
                         int32_t val2 = regs[rs2];
@@ -542,9 +542,9 @@ void Yuemu::run() {
                     }
 
                     case 0x3: { // greater than or equal to
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         int32_t val1 = regs[rs1];
                         int32_t val2 = regs[rs2];
@@ -560,9 +560,9 @@ void Yuemu::run() {
                     }
 
                     case 0x4: { // equal to
-                        uint32_t rd = instr >> 16 & 0xFF;
-                        uint32_t rs1 = instr >> 8 & 0xFF;
-                        uint32_t rs2 = instr & 0xFF;
+                        uint32_t rd = (instr >> 20) & 0xF;
+                        uint32_t rs1 = (instr >> 16) & 0xF;
+                        uint32_t rs2 = (instr >> 12) & 0xF;
 
                         int32_t val1 = regs[rs1];
                         int32_t val2 = regs[rs2];
@@ -684,12 +684,14 @@ std::string Yuemu::get_instr_as_hex(uint32_t instr_int) {
 }
 
 uint32_t Yuemu::sign_extend(uint32_t val, uint32_t no_of_bits) {
-    uint32_t sign_bit = val >> (no_of_bits - 1) & 0b1;
+    uint32_t sign_bit = (val >> (no_of_bits - 1)) & 0b1;
     if (sign_bit == 1) {
         if (no_of_bits == 16) {
-            val += 0xFFFF0000;
+            val |= 0xFFFF0000;
+        } else if (no_of_bits == 20) {
+            val |= 0xFFF00000;
         } else if (no_of_bits == 24) {
-            val += 0xFF000000;
+            val |= 0xFF000000;
         } else {
             std::cout << "TODO implement sign extension for all bit lengths\n";
         }
