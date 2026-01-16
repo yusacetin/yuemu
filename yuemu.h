@@ -23,7 +23,7 @@ private:
 
     bool skip_auto_pc_incr = false;
 
-    void read_file_to_memory(std::string fpath);
+    bool read_file_to_memory(std::string fpath);
     void run();
 
     static std::string get_instr_as_hex(uint32_t instr_int);

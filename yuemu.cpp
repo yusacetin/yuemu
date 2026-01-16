@@ -5,8 +5,9 @@
 #include <iomanip>
 
 Yuemu::Yuemu(std::string fpath) {
-    read_file_to_memory(fpath);
-    run();
+    if (read_file_to_memory(fpath)) {
+        run();
+    }
 }
 
 void Yuemu::run() {
@@ -20,7 +21,19 @@ void Yuemu::run() {
         switch (opcode_category) {
             case 0x0: { // memory
                 switch (opcode_id) {
-                    case 0x0: { // load immediate
+                    case 0x0: { // unsigned load immediate
+                        uint32_t rd = instr >> 16 & 0xFF; // 8 bits
+                        uint32_t val = instr & 0xFFFF; // 16 bits
+
+                        regs[rd] = val;
+
+                        if (DEBUG_LEVEL >= 10) {
+                            std::cout << "uloadm: rd=" << rd << ", val=" << val << "\n";
+                        }
+                        break;
+                    }
+                    
+                    case 0x1: { // load immediate
                         uint32_t rd = instr >> 16 & 0xFF; // 8 bits
                         uint32_t val = instr & 0xFFFF; // 16 bits
 
@@ -37,7 +50,7 @@ void Yuemu::run() {
                         break;
                     }
 
-                    case 0x1: { // load register indirect
+                    case 0x2: { // load register indirect
                         uint32_t rd = instr >> 16 & 0xFF; // 8 bits
                         uint32_t raddr = instr >> 8 & 0xFF; // 8 bits
                         regs[rd] = mem[regs[raddr]];
@@ -49,7 +62,7 @@ void Yuemu::run() {
                         break;
                     }
 
-                    case 0x2: { // storen
+                    case 0x3: { // storen
                         uint32_t raddr = instr >> 16 & 0xFF; // 8 bits
                         uint32_t rs = instr >> 8 & 0xFF; // 8 bits
                         mem[regs[raddr]] = regs[rs];
@@ -61,7 +74,7 @@ void Yuemu::run() {
                         break;
                     }
 
-                    case 0x3: { // stored 0000_0011_16-bits-addr_8-bits-rs
+                    case 0x4: { // stored 0000_0011_16-bits-addr_8-bits-rs
                         uint32_t addr = instr >> 8 & 0xFFFF; // 16 bits
                         uint32_t rs = instr & 0xFF; // 8 bits
                         mem[addr] = regs[rs];
@@ -73,7 +86,7 @@ void Yuemu::run() {
                         break;
                     }
 
-                    case 0x4: { // load direct 0000_0100_8-bits-rd_16-bits-addr
+                    case 0x5: { // load direct 0000_0100_8-bits-rd_16-bits-addr
                         uint32_t rd = instr >> 16 & 0xFF; // 8 bits
                         uint32_t addr = instr & 0xFFFF; // 16 bits
                         regs[rd] = mem[addr];
@@ -81,18 +94,6 @@ void Yuemu::run() {
                         if (DEBUG_LEVEL >= 10) {
                             std::cout << "loadd: rd=" << rd << ", raddr=" << addr << "\n";
                             std::cout << "+> value_at_addr=" << mem[addr] << "\n";
-                        }
-                        break;
-                    }
-
-                    case 0x5: { // unsigned load immediate
-                        uint32_t rd = instr >> 16 & 0xFF; // 8 bits
-                        uint32_t val = instr & 0xFFFF; // 16 bits
-
-                        regs[rd] = val;
-
-                        if (DEBUG_LEVEL >= 10) {
-                            std::cout << "uloadm: rd=" << rd << ", val=" << val << "\n";
                         }
                         break;
                     }
@@ -624,9 +625,13 @@ void Yuemu::run() {
     }
 }
 
-void Yuemu::read_file_to_memory(std::string fpath) {
+bool Yuemu::read_file_to_memory(std::string fpath) {
     std::cout << "Reading program: " << fpath << "\n";
     std::ifstream bin_file(fpath);
+    if (!bin_file) {
+        std::cerr << "Error: file not found" << "\n";
+        return false;
+    }
 
     for (int32_t i=0; !bin_file.eof(); i+=4) {
         char cb3, cb2, cb1, cb0;
@@ -657,6 +662,7 @@ void Yuemu::read_file_to_memory(std::string fpath) {
 
     read_instr_count -= 4;
     bin_file.close();
+    return true;
 }
 
 std::string Yuemu::get_instr_as_hex(uint32_t instr_int) {
