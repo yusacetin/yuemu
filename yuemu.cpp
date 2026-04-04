@@ -11,7 +11,6 @@ Yuemu::Yuemu(std::string fpath) {
 }
 
 void Yuemu::run() {
-    // TODO unsigned and signed types are mixed up for register array and maybe memory map
     std::cout << "Running program\n";
     while (pc != read_instr_count) {
         uint32_t instr = mem[pc]; // fetch
@@ -109,14 +108,14 @@ void Yuemu::run() {
             case 0x1: { // arithmetic
                 switch (opcode_id) {
                     case 0x0: { // add
-                        uint32_t rd = (instr >> 20) & 0xF;
-                        uint32_t rs1 = (instr >> 16) & 0xF;
-                        uint32_t rs2 = (instr >> 12) & 0xF;
+                        int32_t rd = (instr >> 20) & 0xF;
+                        int32_t rs1 = (instr >> 16) & 0xF;
+                        int32_t rs2 = (instr >> 12) & 0xF;
 
-                        uint32_t val1 = regs[rs1];
-                        uint32_t val2 = regs[rs2];
-                        uint32_t res = val1 + val2;
-                        regs[rd] = res;
+                        int32_t val1 = regs[rs1];
+                        int32_t val2 = regs[rs2];
+                        int32_t res = val1 + val2;
+                        regs[rd] = (uint32_t) res;
 
                         if (DEBUG_LEVEL >= 10) {
                             std::cout << "add: rd=" << rd << ", rs1=" << rs1 << ", rs2=" << rs2 << "\n";
@@ -126,14 +125,14 @@ void Yuemu::run() {
                     }
 
                     case 0x1: { // subtract
-                        uint32_t rd = (instr >> 20) & 0xF;
-                        uint32_t rs1 = (instr >> 16) & 0xF;
-                        uint32_t rs2 = (instr >> 12) & 0xF;
+                        int32_t rd = (instr >> 20) & 0xF;
+                        int32_t rs1 = (instr >> 16) & 0xF;
+                        int32_t rs2 = (instr >> 12) & 0xF;
 
                         int32_t val1 = regs[rs1];
                         int32_t val2 = regs[rs2];
                         int32_t res = val1 - val2;
-                        regs[rd] = res;
+                        regs[rd] = (uint32_t) res;
 
                         if (DEBUG_LEVEL >= 10) {
                             std::cout << "sub: rd=" << rd << ", rs1=" << rs1 << ", rs2=" << rs2 << "\n";
@@ -143,14 +142,14 @@ void Yuemu::run() {
                     }
 
                     case 0x2: { // mul
-                        uint32_t rd = (instr >> 20) & 0xF;
-                        uint32_t rs1 = (instr >> 16) & 0xF;
-                        uint32_t rs2 = (instr >> 12) & 0xF;
+                        int32_t rd = (instr >> 20) & 0xF;
+                        int32_t rs1 = (instr >> 16) & 0xF;
+                        int32_t rs2 = (instr >> 12) & 0xF;
 
-                        uint32_t val1 = regs[rs1];
-                        uint32_t val2 = regs[rs2];
-                        uint32_t res = val1 * val2;
-                        regs[rd] = res;
+                        int32_t val1 = regs[rs1];
+                        int32_t val2 = regs[rs2];
+                        int32_t res = val1 * val2;
+                        regs[rd] = (uint32_t) res;
 
                         if (DEBUG_LEVEL >= 10) {
                             std::cout << "mul: rd=" << rd << ", rs1=" << rs1 << ", rs2=" << rs2 << "\n";
@@ -160,14 +159,14 @@ void Yuemu::run() {
                     }
 
                     case 0x3: { // div
-                        uint32_t rd = (instr >> 20) & 0xF;
-                        uint32_t rs1 = (instr >> 16) & 0xF;
-                        uint32_t rs2 = (instr >> 12) & 0xF;
+                        int32_t rd = (instr >> 20) & 0xF;
+                        int32_t rs1 = (instr >> 16) & 0xF;
+                        int32_t rs2 = (instr >> 12) & 0xF;
 
-                        uint32_t val1 = regs[rs1];
-                        uint32_t val2 = regs[rs2];
-                        uint32_t res = val1 / val2;
-                        regs[rd] = res;
+                        int32_t val1 = regs[rs1];
+                        int32_t val2 = regs[rs2];
+                        int32_t res = val1 / val2;
+                        regs[rd] = (uint32_t) res;
 
                         if (DEBUG_LEVEL >= 10) {
                             std::cout << "div: rd=" << rd << ", rs1=" << rs1 << ", rs2=" << rs2 << "\n";
@@ -187,7 +186,7 @@ void Yuemu::run() {
 
             case 0x2: { // control
                 switch (opcode_id) {
-                    case 0x0: { // jump unconditionally immediate // TODO not tested
+                    case 0x0: { // jump unconditionally immediate
                         int32_t val = instr & 0xFFFFFF; // 24 bits address offset
 
                         // sign extend
@@ -204,8 +203,12 @@ void Yuemu::run() {
                         break;
                     }
 
-                    case 0x1: { // jump unconditionally direct // TODO not tested
+                    case 0x1: { // jump unconditionally direct
                         uint32_t rs = (instr >> 20) & 0xF;
+
+                        if (DEBUG_LEVEL >= 10) {
+                            std::cout << "previous pc: " << pc << "\n";
+                        }
 
                         pc += (int32_t) regs[rs];
                         skip_auto_pc_incr = true;
@@ -213,6 +216,7 @@ void Yuemu::run() {
                         if (DEBUG_LEVEL >= 10) {
                             std::cout << "jumpdir: rs=" << rs << "\n";
                             std::cout << "+> value_at_rs=" << to_signed(regs[rs]) << "\n";
+                            std::cout << "+> new pc: " << pc << "\n";
                         }
                         break;
                     }
@@ -241,7 +245,7 @@ void Yuemu::run() {
                         break;
                     }
 
-                    case 0x3: { // jump if direct // TODO not tested
+                    case 0x3: { // jump if direct
                         uint32_t rs = (instr >> 20) & 0xF;
                         uint32_t rcond = instr & 0xF;
 
@@ -284,16 +288,7 @@ void Yuemu::run() {
                         std::cout << "End of program\n";
 
                         if (DEBUG_LEVEL >= 10) {
-                            std::cout << "\nMemory map after 0x00000100\n----------------\n";
-                            for (auto it=mem.begin(); it!=mem.end(); ++it) {
-                                if (it->first >= 0x100) {
-                                    std::stringstream ssaddr;
-                                    ssaddr << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << it->first;
-                                    std::stringstream ssval;
-                                    ssval << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << it->second;
-                                    std::cout << "Address: 0x" << ssaddr.str() << ", Raw Value: 0x" << ssval.str() << ", Value: " << to_signed(it->second) << "\n";
-                                }
-                            }
+                            print_memory(DEFAULT_PRINT_MEMORY_FROM);
                         }
 
                         return;
@@ -470,10 +465,10 @@ void Yuemu::run() {
                         uint32_t rs1 = (instr >> 16) & 0xF;
                         uint32_t rs2 = (instr >> 12) & 0xF;
 
-                        uint32_t val1 = regs[rs1];
+                        int32_t val1 = regs[rs1];
                         uint32_t val2 = regs[rs2];
-                        uint32_t res = val1 >> val2;
-                        regs[rd] = res;
+                        int32_t res = val1 >> val2;
+                        regs[rd] = (uint32_t) res;
 
                         if (DEBUG_LEVEL >= 10) {
                             std::cout << "rshift: rd=" << rd << ", rs1=" << rs1 << ", rs2=" << rs2 << "\n";
@@ -612,16 +607,7 @@ void Yuemu::run() {
     std::cout << "Finished running program\n";
 
     if (DEBUG_LEVEL >= 10) {
-        std::cout << "\nMemory map after 0x00000100\n----------------\n";
-        for (auto it=mem.begin(); it!=mem.end(); ++it) {
-            if (it->first >= 0x100) {
-                std::stringstream ssaddr;
-                ssaddr << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << it->first;
-                std::stringstream ssval;
-                ssval << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << it->second;
-                std::cout << "Address: 0x" << ssaddr.str() << ", Raw Value: 0x" << ssval.str() << ", Value: " << to_signed(it->second) << "\n";
-            }
-        }
+        print_memory(DEFAULT_PRINT_MEMORY_FROM);
     }
 }
 
@@ -663,6 +649,23 @@ bool Yuemu::read_file_to_memory(std::string fpath) {
     read_instr_count -= 4;
     bin_file.close();
     return true;
+}
+
+void Yuemu::print_memory(uint32_t from_addr, uint32_t to_addr) {
+    std::stringstream ss_from;
+    ss_from << "0x" << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << from_addr;
+    std::stringstream ss_to;
+    ss_to << "0x" << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << to_addr;
+    std::cout << "\nModified memory from " << ss_from.str() << " to " << ss_to.str() << "\n----------------\n";
+    for (auto it=mem.begin(); it!=mem.end(); ++it) {
+        if (it->first >= from_addr && it->first <= to_addr) {
+            std::stringstream ssaddr;
+            ssaddr << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << it->first;
+            std::stringstream ssval;
+            ssval << std::hex << std::setw(8) << std::setfill('0') << std::uppercase << it->second;
+            std::cout << "Address: 0x" << ssaddr.str() << ", Raw value: 0x" << ssval.str() << ", Signed value: " << to_signed(it->second) << "\n";
+        }
+    }
 }
 
 std::string Yuemu::get_instr_as_hex(uint32_t instr_int) {
